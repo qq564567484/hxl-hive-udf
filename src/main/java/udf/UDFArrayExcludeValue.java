@@ -76,10 +76,11 @@ public class UDFArrayExcludeValue extends GenericUDF {
     HashSet<?> set1 = Sets.newHashSet(sourceArray.iterator());
     HashSet<?> set2 = Sets.newHashSet(excludeArray.iterator());
 
-    Sets.SetView<?> difference = Sets.difference(set1, set2);
-    HashSet<?> resultSet = Sets.newHashSet(difference.iterator());
+    HashSet<?> differentSet = Sets.newHashSet(Sets.intersection(set1, set2).iterator());
 
-    return new ArrayList<>(resultSet);
+    sourceArray.removeAll(differentSet);
+
+    return sourceArray;
   }
 
   @Override
