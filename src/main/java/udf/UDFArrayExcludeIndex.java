@@ -21,8 +21,8 @@ import java.util.List;
 @Description(name = "udf_array_exclude_index",
              value = "_FUNC_(values, indices) - Removes elements of 'values' whose indices are in 'indices'.")
 public class UDFArrayExcludeIndex extends GenericUDF {
-  private transient ListObjectInspector valueArrayOI = null;
-  private transient ListObjectInspector indexArrayOI = null;
+  private transient ListObjectInspector valueArrayOI;
+  private transient ListObjectInspector indexArrayOI;
   private transient ObjectInspectorConverters.Converter converter;
 
   @Override
@@ -33,7 +33,6 @@ public class UDFArrayExcludeIndex extends GenericUDF {
       throw  new UDFArgumentLengthException("require 2 params ( array(value),array(index) ) , now param length is " + arguments.length);
     }
 
-    //第二个数组必须为Int或者Long
     valueArrayOI = (ListObjectInspector) ObjectInspectorUtils
             .getStandardObjectInspector(arguments[0]);
 
