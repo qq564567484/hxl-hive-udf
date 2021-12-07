@@ -51,7 +51,7 @@ public class UDFArrayIntersect extends GenericUDF {
     secondArrayOI = (ListObjectInspector) ObjectInspectorUtils
             .getStandardObjectInspector(arguments[1]);
 
-    ObjectInspector elementOI = firstArrayOI.getListElementObjectInspector();
+    converter = new ObjectInspectorConverters.Converter[arguments.length];
 
     for (int i = 0; i < arguments.length; ++i) {
       converter[i] = ObjectInspectorConverters.getConverter(arguments[i], firstArrayOI);
