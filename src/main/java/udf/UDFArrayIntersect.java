@@ -13,72 +13,84 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 
 /**
- * 2个入参,array_1,array2,返回两个数组的交集
+ * array_1,array2,array3 ... 返回数组之间的交集
  */
 @Description(name = "udf_array_intersect",
-             value = "_FUNC_(values, indices) - return two array's intersec result.")
+             value = "_FUNC_(array1, array2, array3, ...) - return array's intersec result.")
 public class UDFArrayIntersect extends GenericUDF {
-  private transient ListObjectInspector firstArrayOI;
-  private transient ListObjectInspector secondArrayOI;
+  private transient ListObjectInspector[] argumentListOI;
   private transient ObjectInspectorConverters.Converter[] converter;
+  private transient ListObjectInspector commonOI;
 
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments)
     throws UDFArgumentException {
 
-    if(arguments.length != 2){
-      throw  new UDFArgumentLengthException("require 2 params ( array(value),array(index) ) , now param length is " + arguments.length);
+    if(arguments.length == 0){
+      throw  new UDFArgumentLengthException("require params ( array(value),array(value), ... ) , now param length is " + arguments.length);
     }
 
-    if(!arguments[0].getCategory().equals(ObjectInspector.Category.LIST)
-            || !arguments[1].getCategory().equals(ObjectInspector.Category.LIST)
-    ){
-      throw new UDFArgumentException("require 2 params ( array(value),array(index) ) , now is ( " +
-              arguments[0].getTypeName() + " , " + arguments[1].getTypeName()
-      );
+    for (ObjectInspector oi : arguments) {
+      if(!oi.getCategory().equals(ObjectInspector.Category.LIST)){
+        throw new UDFArgumentException("require params ( array(value),array(value), ... ) , now is ( " +
+                oi.getTypeName() + " , " + oi.getTypeName()
+        );
+      }
     }
 
-    firstArrayOI = (ListObjectInspector) ObjectInspectorUtils
-            .getStandardObjectInspector(arguments[0]);
-
-    secondArrayOI = (ListObjectInspector) ObjectInspectorUtils
-            .getStandardObjectInspector(arguments[1]);
-
+    argumentListOI = new ListObjectInspector[arguments.length];
     converter = new ObjectInspectorConverters.Converter[arguments.length];
 
-    for (int i = 0; i < arguments.length; ++i) {
-      converter[i] = ObjectInspectorConverters.getConverter(arguments[i], firstArrayOI);
+    for (int i = 0; i < arguments.length; i++) {
+      argumentListOI[i] = (ListObjectInspector) ObjectInspectorUtils
+              .getStandardObjectInspector(arguments[i]);
+
+      if(null == commonOI){
+        commonOI = (ListObjectInspector) ObjectInspectorUtils
+                .getStandardObjectInspector(arguments[0]);
+      }
+
+      converter[i] = ObjectInspectorConverters.getConverter(arguments[i], commonOI);
     }
 
-    return firstArrayOI;
+    return argumentListOI[0];
 
   }
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    List<?> firstArray = (List<?>)converter[0].convert(firstArrayOI.getList(arguments[0].get()));
+    ArrayList<Set<?>> arrayList = new ArrayList<>(arguments.length);
 
-    List<?> secondArray = (List<?>)converter[1].convert(secondArrayOI.getList(arguments[1].get()));
+    for (int i = 0; i < arguments.length; i++) {
 
-    if (firstArray == null || secondArray == null) {
+      List<?> array = (List<?>)converter[i].convert(commonOI.getList(arguments[i].get()));
+
+      if(null != array){
+        arrayList.add(Sets.newHashSet(array.iterator()));
+      }
+    }
+
+    if(arrayList.size() == 0){
       return null;
     }
 
+    Set<?> intersectionSet = Sets.newHashSet();
 
-    Sets.SetView<?> view = Sets.intersection(Sets.newHashSet(firstArray), Sets.newHashSet(secondArray));
+    for (Set<?> set: arrayList){
+       if(intersectionSet.isEmpty()){
+         intersectionSet = set;
+       }else{
+         Sets.SetView<?> view = Sets.intersection(intersectionSet, set);
+         intersectionSet = Sets.newHashSet(view);
+       }
+    }
 
-    ArrayList<Object> intersectList = new ArrayList<>();
-
-    intersectList.addAll(Sets.newHashSet(view));
-
-    return intersectList;
+    return  Lists.newArrayList(intersectionSet);
   }
 
   @Override
