@@ -196,3 +196,30 @@ select udf_array_intersect(array(101,202,303,404),array(101,404),array(404)) as 
 +--------+
 
 ```
+
+
+###### udf_array_slice : 数组截取(array,开始下标,截取长度)
+```sql
+-- 注册函数
+CREATE TEMPORARY FUNCTION udf_array_slice AS 'udf.UDFArraySlice';
+
+-- 案例1
+select udf_array_slice(array('SS','UU','BB','XX','YY','ZZ'),0,3) as res;
+-- 结果
++-------------------+
+|        res        |
++-------------------+
+| ["SS","UU","BB"]  |
++-------------------+
+
+
+-- 案例2
+select udf_array_slice(array(101,202,303,404),1,1) as res;
+-- 结果
++--------+
+|  res   |
++--------+
+| [202]  |
++--------+
+
+```
