@@ -26,7 +26,7 @@ import java.util.List;
  * If offset + length is greater than array length, the resulting array will 
  * be truncated.
  */
-@Description(name = "udfarrayslice",
+@Description(name = "udf_array_slice",
              value = "_FUNC_(values, offset, length) - Slices the given array as specified by the offset and length parameters.")
   public class UDFArraySlice extends GenericUDF {
     private ObjectInspectorConverters.Converter int_converter1;
