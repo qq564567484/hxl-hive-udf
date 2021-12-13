@@ -36,7 +36,7 @@ import java.util.*;
    * 1.initialize方法只调用一次,并且在evaluate方法调用前调用,该方法接受一个argument数组
    * 2.此方法检查接受正确的参数类型和参数个数
    * 3.定义输出类型
-   * @param objectInspectors
+   * @param arguments
    * @return
    * @throws UDFArgumentException
    */
@@ -60,14 +60,20 @@ import java.util.*;
     //设定不同objectinspector的类型转换器
     converters = new ObjectInspectorConverters.Converter[arguments.length];
 
-    //根据入参的第一个objectinspector获得他的TypeInfo对象
-    TypeInfo commonInfo = TypeInfoUtils.getTypeInfoFromObjectInspector(arguments[0]);
-
+    TypeInfo commonInfo = null;
     for (int i = 1; i < arguments.length; i++) {
+      //获取一个每个元素都能进行转化的class,找不到就为null
       TypeInfo currInfo = TypeInfoUtils.getTypeInfoFromObjectInspector(arguments[i]);
 
-      //获取一个每个元素都能进行转化的class
-      //找不到就为null
+      if(currInfo.equals(TypeInfoUtils.getTypeInfoFromObjectInspector(PrimitiveObjectInspectorFactory.javaVoidObjectInspector))){
+        continue;
+      }
+
+      if(null == commonInfo){
+        commonInfo = currInfo;
+      }
+
+      //TODO voidOI 和 stringOI获取common class会返回 double,但没找到解决办法,这里先排除 voidOI
       commonInfo = FunctionRegistry.getCommonClassForComparison(currInfo, commonInfo);
     }
 
@@ -86,7 +92,7 @@ import java.util.*;
 
   /**
    * 这个方法类似UDF的evaluate()方法。它处理真实的参数，并返回最终结果.
-   * @param deferredObjects
+   * @param arguments
    * @return
    * @throws HiveException
    */

@@ -6,6 +6,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoUtils;
@@ -51,15 +52,31 @@ public class UDFArgsMin extends GenericUDF {
     //设定不同objectinspector的类型转换器
     converters = new ObjectInspectorConverters.Converter[arguments.length];
 
-    //根据入参的第一个objectinspector获得他的TypeInfo对象
-    TypeInfo commonInfo = TypeInfoUtils.getTypeInfoFromObjectInspector(arguments[0]);
-
+    TypeInfo commonInfo = null;
     for (int i = 1; i < arguments.length; i++) {
+      //获取一个每个元素都能进行转化的class,找不到就为null
       TypeInfo currInfo = TypeInfoUtils.getTypeInfoFromObjectInspector(arguments[i]);
 
-      //获取一个每个元素都能进行转化的class
-      //找不到就为null
+      if(currInfo.equals(TypeInfoUtils.getTypeInfoFromObjectInspector(PrimitiveObjectInspectorFactory.javaVoidObjectInspector))){
+        continue;
+      }
+
+      if(null == commonInfo){
+        commonInfo = currInfo;
+      }
+
+      //TODO voidOI 和 stringOI获取common class会返回 double,但没找到解决办法,这里先排除 voidOI
       commonInfo = FunctionRegistry.getCommonClassForComparison(currInfo, commonInfo);
+    }
+
+    //根据上面得到的TypeInfo对象设定返回值的类型
+    resultOI = TypeInfoUtils.getStandardWritableObjectInspectorFromTypeInfo(
+            (commonInfo == null) ?
+                    TypeInfoFactory.doubleTypeInfo : commonInfo);
+
+    //根据返回值类型和每个参数的ObjectInspector类型,获取相应的类型转换器
+    for (int i = 0; i < arguments.length; i++) {
+      converters[i] = ObjectInspectorConverters.getConverter(arguments[i], resultOI);
     }
 
     //根据上面得到的TypeInfo对象设定返回值的类型
