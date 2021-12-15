@@ -224,7 +224,7 @@ select udf_array_slice(array(101,202,303,404),1,1) as res;
 
 ```
 
-###### udf_is_number : 判断是否为数字
+###### udf_is_number : 判断是否为数字,兼容字符串
 ```sql
 -- 注册函数
 CREATE TEMPORARY FUNCTION udf_is_number AS 'udf.UDFIsNumber';
