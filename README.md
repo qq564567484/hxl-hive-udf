@@ -223,3 +223,29 @@ select udf_array_slice(array(101,202,303,404),1,1) as res;
 +--------+
 
 ```
+
+###### udf_is_number : 判断是否为数字
+```sql
+-- 注册函数
+CREATE TEMPORARY FUNCTION udf_is_number AS 'udf.UDFIsNumber';
+
+-- 案例1
+select udf_is_number('1000.12345') as res;
+-- 结果
++-------+
+|  res  |
++-------+
+| true  |
++-------+
+
+
+-- 案例2
+select udf_is_number('1000.1xyz5') as res;
+-- 结果
++--------+
+|  res   |
++--------+
+| false  |
++--------+
+
+```
