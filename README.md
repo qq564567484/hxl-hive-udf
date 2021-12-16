@@ -266,3 +266,37 @@ select udf_map_exclude(str_to_map('name:zhangsan,age:25',',',':'),array('age')) 
 +----------------------+
 
 ```
+
+
+
+### UDTF
+
+
+###### udtf_json_array_explode : 拆解json array,返回json和下标
+
+```sql
+-- 注册函数
+CREATE TEMPORARY FUNCTION udtf_json_array_explode AS 'udtf.UDTFJsonArrayExplode';
+
+-- 案例1
+with tmp as (
+select '[{"name":"AA","age":18},{"name":"BB","age":22},{"name":"CC","age":25}]' as json_array_string 
+)
+select
+   a.json_array_string,
+   b.json,
+   b.index
+from tmp a
+lateral view udtf_json_array_explode(json_array_string) b as json,index;
+
+-- 结果
++----------------------------------------------------+-------------------------+----------+
+|                a.json_array_string                 |         b.json          | b.index  |
++----------------------------------------------------+-------------------------+----------+
+| [{"name":"AA","age":18},{"name":"BB","age":22},{"name":"CC","age":25}] | {"name":"AA","age":18}  | 1        |
+| [{"name":"AA","age":18},{"name":"BB","age":22},{"name":"CC","age":25}] | {"name":"BB","age":22}  | 2        |
+| [{"name":"AA","age":18},{"name":"BB","age":22},{"name":"CC","age":25}] | {"name":"CC","age":25}  | 3        |
++----------------------------------------------------+-------------------------+----------+
+
+
+```
