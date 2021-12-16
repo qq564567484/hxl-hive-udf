@@ -249,3 +249,20 @@ select udf_is_number('1000.1xyz5') as res;
 +--------+
 
 ```
+
+
+###### udf_map_exclude : func(map,array),按array中的key删除map中的数据
+```sql
+-- 注册函数
+CREATE TEMPORARY FUNCTION udf_map_exclude AS 'udf.UDFMapExclude';
+
+-- 案例1
+select udf_map_exclude(str_to_map('name:zhangsan,age:25',',',':'),array('age')) as res;
+-- 结果
++----------------------+
+|         res          |
++----------------------+
+| {"name":"zhangsan"}  |
++----------------------+
+
+```
