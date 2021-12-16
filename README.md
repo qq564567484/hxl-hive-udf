@@ -277,6 +277,16 @@ select udf_map_exclude(str_to_map('name:zhangsan,age:25',',',':'),array('age')) 
 ```
 
 
+###### udf_check_idcard_no : func(no),校验身份证号是否有效,支持18/15位号码
+```sql
+-- 注册函数
+CREATE TEMPORARY FUNCTION udf_check_idcard_no AS 'udf.UDFCheckIDcardNo';
+
+-- 案例1
+select udf_check_idcard_no(身份证号字符串或者数字) as res;
+
+```
+
 
 
 
