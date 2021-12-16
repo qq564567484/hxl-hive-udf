@@ -7,6 +7,8 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils.ObjectInspectorCopyOption;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,9 +25,10 @@ import java.util.Map;
              value = "_FUNC_(values, indices) - Removes elements of 'values'" +
                      " whose keys are in 'indices'.")
 public class UDFMapExclude extends GenericUDF {
-  private transient ListObjectInspector arrayOI;
+  private transient ObjectInspector arrayOI;
   private transient MapObjectInspector mapOI;
   private transient ObjectInspectorConverters.Converter converter;
+  private transient ObjectInspector oi;
 
   @Override
   public ObjectInspector initialize(ObjectInspector[] arguments)
@@ -44,54 +47,37 @@ public class UDFMapExclude extends GenericUDF {
               + arguments[0].getTypeName());
     }
 
-    if (arguments[1].getCategory() != ObjectInspector.Category.LIST) {
-      throw new UDFArgumentException(getFuncName() + " only takes list types, got "
-              + arguments[0].getTypeName());
-    }
-
-
     mapOI = (MapObjectInspector) ObjectInspectorUtils
             .getStandardObjectInspector(arguments[0]);
 
-    arrayOI = (ListObjectInspector) ObjectInspectorUtils
-            .getStandardObjectInspector(arguments[1]);
-
-
     ObjectInspector mapItemOI = mapOI.getMapKeyObjectInspector();
 
-    ObjectInspector listItemOI = arrayOI.getListElementObjectInspector();
+    StandardListObjectInspector listObjectInspector = ObjectInspectorFactory.getStandardListObjectInspector(mapItemOI);
+    converter = ObjectInspectorConverters.getConverter(arguments[1], listObjectInspector);
 
-    if (!ObjectInspectorUtils.compareTypes(mapItemOI, listItemOI)) {
-      throw new UDFArgumentException("Map key type (" + mapItemOI + ") must match " + 
-                                     "list element type (" + listItemOI + ").");
-    }
-
-    converter = ObjectInspectorConverters.getConverter(listItemOI,mapItemOI);
+    arrayOI = ObjectInspectorUtils.getStandardObjectInspector(arguments[1]);
 
     return mapOI;
+
   }
 
   @Override
   public Object evaluate(DeferredObject[] arguments) throws HiveException {
 
     Map<?, ?> valueMap = mapOI.getMap(arguments[0].get());
-    List<?> indiciesArray = arrayOI.getList(arguments[1].get());
-
-    Object[] formattedList = indiciesArray.stream().map(i -> converter.convert(i)).toArray();
-
-
+    List<?> indiciesArray = (List<?>) converter.convert(arguments[1].get());
 
     if (null == valueMap) {
-      return null;
-    }else if (null == formattedList){
-      return valueMap;
+        return null;
+    }else if (null == indiciesArray){
+        return valueMap;
     }else{
-      for (Object key : formattedList) {
-        valueMap.remove(key);
-      }
+        for (Object key : indiciesArray) {
+          valueMap.remove(key);
+        }
     }
-
     return valueMap;
+
   }
 
   @Override
