@@ -21,6 +21,15 @@ add jar file:///home/hadoop/hive-udf-1.0-SNAPSHOT.jar;
 ```
 
 
+
+
+
+
+
+
+
+
+
   
   
 ### UDF
@@ -267,6 +276,17 @@ select udf_map_exclude(str_to_map('name:zhangsan,age:25',',',':'),array('age')) 
 
 ```
 
+
+
+
+
+
+
+
+
+
+  
+  
 
 
 ### UDTF
